@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A4 Canvas with ID Cards</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: "Poppins", sans-serif;
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        .container {
+            display: flex;
+            margin: 50px;
+        }
+
+        .container1 {
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+            gap: 10px
+        }
+
+        button {
+            width: 200px;
+            padding: 10px 30px;
+            margin: 10px;
+            cursor: pointer;
+            /* border: none; */
+            background-color: transparent;
+            border: 2px solid #1A1A1A;
+            border-radius: 15px;
+            box-sizing: border-box;
+            color: #3B3B3B;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            color: #fff;
+            background-color: #1A1A1A;
+            box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px;
+            transform: translateY(-2px);
+        }
+
+        input {
+            width: 370px;
+            cursor: pointer;
+            padding: 10px 20px;
+        }
+
+        .con1 * {
+            padding: 10px;
+        }
+
+        #previewCanvas {
+            width: auto;
+            height: 80vh;
+            border: 1px solid black;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="container1">
+            <div class="con1">
+                <label for="image1">Upload First ID Image:</label><br>
+                <input type="file" id="image1" accept="image/*">
+            </div>
+
+            <div class="con1">
+                <label for="image2">Upload Second ID Image:</label><br>
+                <input type="file" id="image2" accept="image/*">
+            </div>
+
+
+            <button id="downloadBtn">Download as JPG</button>
+        </div>
+        <div class="container2">
+            <canvas id="previewCanvas" width="620" height="877" style="border:1px solid black;"></canvas><br><br>
+        </div>
+
+    </div>
+    <script>
+        // Create main A4 Canvas (Hidden for Preview) - 2480 x 3508 pixels
+        const a4Width = 2480, a4Height = 3508;
+        const mainCanvas = document.createElement("canvas");
+        mainCanvas.width = a4Width;
+        mainCanvas.height = a4Height;
+        const mainCtx = mainCanvas.getContext("2d");
+
+        // Smaller preview canvas (scaled down to 25%)
+        const previewCanvas = document.getElementById("previewCanvas");
+        const previewCtx = previewCanvas.getContext("2d");
+
+        // Define areas for ID cards
+        const idCardMaxWidth = 842, idCardMaxHeight = 650;
+        const topPosition = { x: (a4Width - idCardMaxWidth) / 2, y: 500 };
+        const bottomPosition = { x: (a4Width - idCardMaxWidth) / 2, y: a4Height - idCardMaxHeight - 600 };
+
+        // Set background color on main canvas
+        function setCanvasBackgroundColor(color) {
+            mainCtx.fillStyle = color;
+            mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+        }
+        setCanvasBackgroundColor("white");  // Set initial background color to white
+
+        // Image upload listeners
+        document.getElementById("image1").addEventListener("change", (e) => uploadAndFitImage(e, topPosition));
+        document.getElementById("image2").addEventListener("change", (e) => uploadAndFitImage(e, bottomPosition));
+
+        // Upload and fit image to canvas area
+        function uploadAndFitImage(event, position) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const img = new Image();
+            img.onload = function () {
+                fitImageToCanvas(img, position);
+                updatePreview();
+            };
+            img.src = URL.createObjectURL(file);
+        }
+
+        // Function to fit image into specified canvas area without distortion
+        function fitImageToCanvas(img, position) {
+            // Calculate aspect ratio and scaling to cover the ID card area
+            const imgAspectRatio = img.width / img.height;
+            const targetAspectRatio = idCardMaxWidth / idCardMaxHeight;
+            let renderWidth, renderHeight;
+
+            if (imgAspectRatio > targetAspectRatio) {
+                // Image is wider than the target area, fit by height
+                renderHeight = idCardMaxHeight;
+                renderWidth = idCardMaxHeight * imgAspectRatio;
+            } else {
+                // Image is taller than the target area, fit by width
+                renderWidth = idCardMaxWidth;
+                renderHeight = idCardMaxWidth / imgAspectRatio;
+            }
+
+            // Calculate the center position for cropping
+            const xOffset = position.x - (renderWidth - idCardMaxWidth) / 2;
+            const yOffset = position.y - (renderHeight - idCardMaxHeight) / 2;
+
+            // Draw the image, filling the ID card area while keeping aspect ratio
+            mainCtx.drawImage(img, xOffset, yOffset, renderWidth, renderHeight);
+        }
+
+        // Update the preview canvas
+        function updatePreview() {
+            previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            previewCtx.drawImage(mainCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
+        }
+
+        // Download as JPG
+        document.getElementById("downloadBtn").addEventListener("click", () => {
+            const link = document.createElement("a");
+            link.download = "a4_with_id_cards.jpg";
+            link.href = mainCanvas.toDataURL("image/jpeg", 1.0);  // Save main canvas as JPG
+            link.click();
+        });
+
+    </script>
+
+</body>
+
+</html>
